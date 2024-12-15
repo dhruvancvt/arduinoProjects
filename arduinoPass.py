@@ -1,22 +1,29 @@
 import serial
 import time
+import threading
 
+running = True
 
 def readserial(comport, baudrate, timestamp=False):
+    global running
+    ser = serial.Serial(comport, baudrate, timeout=0.1)
 
-    ser = serial.Serial(comport, baudrate, timeout=0.1)         # 1/timeout is the frequency at which the port is read
-
-    while True:
-
+    while running:
         data = ser.readline().decode().strip()
-
         if data and timestamp:
-            timestamp = time.strftime('%H:%M:%S')
-            print(f'{timestamp} > {data}')
+            current_time = time.strftime('%H:%M:%S')
+            print(f'{current_time} > {data}')
         elif data:
             print(data)
 
+    ser.close()
+    print("Serial connection closed.")
+
+def stop_reading():
+    global running
+    input("Press Enter to stop the serial reading...")
+    running = False
 
 if __name__ == '__main__':
-
-    readserial('cu.usbmodem1423201', 115200, True)                          # COM port, Baudrate, Show timestamp
+    threading.Thread(target=stop_reading).start()
+    readserial('/dev/cu.usbmodem1423201', 115200, True)
