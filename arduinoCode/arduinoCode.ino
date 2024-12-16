@@ -1,42 +1,41 @@
+#include <Wire.h>
 #include <Adafruit_MPU6050.h>
 #include <Adafruit_Sensor.h>
-#include <Wire.h>
 
-// Create an MPU6050 object
+// Create MPU6050 object
 Adafruit_MPU6050 mpu;
 
 void setup() {
+  // Initialize Serial Monitor
   Serial.begin(115200);
-  Wire.begin();
-
-  // Initialize the MPU6050
+  
+  // Initialize I2C communication with MPU6050
   if (!mpu.begin()) {
-    Serial.println("Failed to find MPU6050 chip. Please check your connections.");
-    while (1);
+    Serial.println("Failed to find MPU6050 chip");
+    while (1) {
+      delay(10);
+    }
   }
+  Serial.println("MPU6050 Found!");
 
-  Serial.println("MPU6050 found!");
+  // Set accelerometer range
+  mpu.setAccelerometerRange(MPU6050_RANGE_8_G);
 
-  // Configure the sensor
-  mpu.setAccelerometerRange(MPU6050_RANGE_16_G);
-  mpu.setGyroRange(MPU6050_RANGE_500_DEG);
+  // Set sample rate
   mpu.setFilterBandwidth(MPU6050_BAND_21_HZ);
+
   delay(100);
 }
 
 void loop() {
-  // Get new sensor events with the latest data
-  sensors_event_t accel, gyro, temp;
-  mpu.getEvent(&accel, &gyro, &temp);
+  // Get new sensor event
+  sensors_event_t a, g, temp;
+  mpu.getEvent(&a, &g, &temp);
 
-  // Map the accelerometer data to a range for Processing
-  float mappedX = map(accel.acceleration.x, -10, 10, -100, 100);
-  float mappedY = map(accel.acceleration.y, -10, 10, -100, 100);
-
-  // Send data over serial as comma-separated values
-  Serial.print(mappedX);
+  // Extract X and Y acceleration values and send over serial
+  Serial.print(a.acceleration.x);
   Serial.print(",");
-  Serial.println(mappedY);
+  Serial.println(a.acceleration.y);
 
-  delay(50); // Slight delay for smoother output
+  delay(100);  // Adjust the delay as needed
 }
