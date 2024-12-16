@@ -69,5 +69,5 @@ def draw_moving_dot():
 if __name__ == '__main__':
     # Start the serial reading thread
     threading.Thread(target=stop_reading).start()
-    threading.Thread(target=readserial, args=('/dev/cu.usbmodem1423201', 115200, True)).start()
+    threading.Thread(target=readserial, args=('/dev/cu.usbmodem1443201', 115200, True)).start()
     draw_moving_dot()
