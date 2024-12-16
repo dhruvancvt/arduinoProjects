@@ -27,11 +27,10 @@ def readserial(comport, baudrate, timestamp=False):
                 dot_position[0] = x
                 dot_position[1] = y
             except ValueError:
-                pass  # Ignore invalid data
+                print("Invalid Data, ignored") # Ignore invalid data
 
     ser.close()
     print("Serial connection closed.")
-
 def stop_reading():
     global running
     input("Press Enter to stop the serial reading...")
