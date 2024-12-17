@@ -1,97 +1,112 @@
 import serial
-import time
 import threading
 import pygame
 import sys
+import time
 
 # Global variables
 running = True
 dot_position = [250, 250]  # Initial position of the dot
-invalid_data = None  # To store the most recent invalid data
 
-def readserial(comport, baudrate, timestamp=False):
-    global running, dot_position, invalid_data
-    ser = serial.Serial(comport, baudrate, timeout=0.1)
+# Variables to hold previous time for delta time calculation
+previous_time = time.time()
+x_velocity = 0  # Initialize x velocity (angular velocity to position conversion)
+y_velocity = 0  # Initialize y velocity (angular velocity to position conversion)
+
+def readserial(comport, baudrate):
+    global running, dot_position, previous_time, x_velocity, y_velocity
+
+    try:
+        ser = serial.Serial(comport, baudrate, timeout=0.1)
+    except serial.SerialException as e:
+        print(f"Error opening serial port: {e}")
+        running = False
+        return
 
     while running:
-        data = ser.readline().decode().strip()
-        if data:
-            if timestamp:
-                current_time = time.strftime('%H:%M:%S')
-                print(f'{current_time} > {data}')
-            else:
-                print(data)
+        try:
+            data = ser.readline().decode().strip()
+            if data:
+                print(f"Received Data: {data}")  # Debug: print the received data
+                try:
+                    x, y = map(int, data.split(","))
+                    
+                    # Calculate delta time (time between updates)
+                    current_time = time.time()
+                    delta_time = current_time - previous_time
+                    previous_time = current_time
+                    
+                    # Debug: print the delta_time and x, y values
+                    print(f"Delta Time: {delta_time}, x: {x}, y: {y}")
+                    
+                    # Integrate gyroscope data (angular velocity to change in position)
+                    x_velocity += x * delta_time  # Angular velocity to change in x position
+                    y_velocity += y * delta_time  # Angular velocity to change in y position
+                    
+                    # Debug: print the updated velocities
+                    print(f"Updated Velocities -> x_velocity: {x_velocity}, y_velocity: {y_velocity}")
 
-            # Try updating dot position with valid data
-            try:
-                x, y = map(int, data.split(","))
-                dot_position[0] = x
-                dot_position[1] = y
-                invalid_data = None  # Reset invalid data on success
-            except ValueError:
-                invalid_data = data  # Store the invalid data
-                print(f"Invalid Data, using fallback: {invalid_data}")
-                use_invalid_data_to_move(invalid_data)
+                    # Update the dot position, apply bounds to keep the dot within screen limits
+                    dot_position[0] = max(0, min(500, dot_position[0] + int(x_velocity)))
+                    dot_position[1] = max(0, min(500, dot_position[1] + int(y_velocity)))
+
+                    # Debug: print the updated dot position
+                    print(f"Updated Dot Position -> x: {dot_position[0]}, y: {dot_position[1]}")
+                    
+                except ValueError:
+                    print(f"Invalid data received: {data}")
+
+        except serial.SerialException as e:
+            print(f"Serial error: {e}")
+            running = False
 
     ser.close()
     print("Serial connection closed.")
 
-def use_invalid_data_to_move(data):
-    """Fallback function to move the dot using invalid data."""
-    global dot_position
-    try:
-        # If the data is a single integer, use it to move along the x-axis
-        value = int(data)
-        dot_position[0] = max(0, min(500, dot_position[0] + value))
-    except ValueError:
-        # If data is non-numeric, use the ASCII sum of the characters
-        ascii_sum = sum(ord(char) for char in data)
-        dot_position[0] = max(0, min(500, dot_position[0] + ascii_sum % 20))
-        dot_position[1] = max(0, min(500, dot_position[1] + ascii_sum % 20))
 
 def stop_reading():
     global running
-    input("Press Enter to stop the serial reading...")
+    input("Press Enter to stop the program...\n")
     running = False
 
-def draw_moving_dot():
-    global running, dot_position, invalid_data
 
-    # Initialize pygame
+def draw_moving_dot():
+    global running, dot_position
+
     pygame.init()
     screen = pygame.display.set_mode((500, 500))
     pygame.display.set_caption("Serial Dot Movement")
 
     clock = pygame.time.Clock()
-    font = pygame.font.Font(None, 24)
 
     while running:
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
 
-        # Clear the screen
-        screen.fill((0, 0, 0))
+        screen.fill((0, 0, 0))  # Clear the screen
+        pygame.draw.circle(screen, (255, 0, 0), dot_position, 10)  # Draw the dot
 
-        # Draw the dot
-        pygame.draw.circle(screen, (255, 0, 0), dot_position, 10)
-
-        # Display invalid data if it exists
-        if invalid_data:
-            text_surface = font.render(f"Invalid Data: {invalid_data}", True, (255, 255, 255))
-            screen.blit(text_surface, (10, 10))
-
-        # Refresh the display
         pygame.display.flip()
-
-        # Limit the frame rate
         clock.tick(30)
 
     pygame.quit()
     sys.exit()
 
+
 if __name__ == '__main__':
-    # Start the serial reading thread
-    threading.Thread(target=stop_reading).start()
-    threading.Thread(target=readserial, args=('/dev/cu.usbmodem1443201', 115200, True)).start()
-    draw_moving_dot()
+    try:
+        serial_thread = threading.Thread(target=readserial, args=('/dev/cu.usbmodem1443201', 115200))  # Update with your serial port
+        serial_thread.start()
+
+        stop_thread = threading.Thread(target=stop_reading)
+        stop_thread.start()
+
+        draw_moving_dot()
+
+        serial_thread.join()
+        stop_thread.join()
+
+    except KeyboardInterrupt:
+        running = False
+        print("\nProgram interrupted by user.")
