@@ -31,15 +31,13 @@ void loop() {
   // Read the sensor events (accelerometer, gyroscope, and temperature)
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
   
-  // Scale down the gyro values (depending on the default range, which is likely ±250 degrees per second)
-  int deltaX = gyroEvent.gyro.x / 10;  // Adjust divisor for appropriate sensitivity
-  int deltaY = gyroEvent.gyro.y / 10;
-  
-  // Send the data to the serial port in comma-separated format
-  Serial.print(deltaX);
+  // Debugging: Print the raw gyro values
+
+  Serial.print(gyroEvent.gyro.x);
   Serial.print(",");
-  Serial.println(deltaY);
+  Serial.println(gyroEvent.gyro.y);
+
+  
   
   delay(50);  // Delay between readings (adjust as needed)
 }
-
