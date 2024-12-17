@@ -7,18 +7,14 @@ import time
 # Global variables
 running = True
 dot_position = [250, 250]  # Initial position of the dot
+x_velocity = 0  # Initial x velocity
+y_velocity = 0  # Initial y velocity
 
 # Variables to hold previous time for delta time calculation
 previous_time = time.time()
-x_velocity = 0  # Initialize x velocity (angular velocity to position conversion)
-y_velocity = 0  # Initialize y velocity (angular velocity to position conversion)
 
-# Scaling factor to amplify the small gyroscope readings
+# Scaling factor to amplify the small gyroscope readings (acceleration)
 scaling_factor = 10  # Adjust this factor to make the movement more noticeable
-
-# Smoothing factors to reduce sudden jumps in movement
-smoothing_factor = 0.8  # Factor to smooth the movement of the velocities
-damping_factor = 0.95   # Factor to prevent rapid velocity buildup
 
 def readserial(comport, baudrate):
     global running, dot_position, previous_time, x_velocity, y_velocity
@@ -37,32 +33,26 @@ def readserial(comport, baudrate):
                 print(f"Received Data: {data}")  # Debug: print the received data
                 try:
                     # Parse the received data (assuming format: 'x,y')
-                    x, y = map(float, data.split(","))
+                    x_accel, y_accel = map(float, data.split(","))
                     
                     # Calculate delta time (time between updates)
                     current_time = time.time()
                     delta_time = current_time - previous_time
                     previous_time = current_time
                     
-                    # Debug: print the delta_time and x, y values
-                    print(f"Delta Time: {delta_time}, x: {x}, y: {y}")
+                    # Debug: print the delta_time and accelerations
+                    print(f"Delta Time: {delta_time}, x_accel: {x_accel}, y_accel: {y_accel}")
                     
-                    # Integrate gyroscope data (angular velocity to change in position)
-                    x_velocity = (x_velocity * smoothing_factor) + (x * delta_time * scaling_factor)
-                    y_velocity = (y_velocity * smoothing_factor) + (y * delta_time * scaling_factor)
+                    # Integrate acceleration to get velocity
+                    x_velocity += x_accel * delta_time * scaling_factor
+                    y_velocity += y_accel * delta_time * scaling_factor
+                    
+                    # Integrate velocity to get position
+                    dot_position[0] += x_velocity * delta_time
+                    dot_position[1] += y_velocity * delta_time
 
-                    # Apply damping to the velocities to avoid excessive motion
-                    x_velocity *= damping_factor
-                    y_velocity *= damping_factor
-                    
-                    # Debug: print the updated velocities
+                    # Debug: print the updated velocities and positions
                     print(f"Updated Velocities -> x_velocity: {x_velocity}, y_velocity: {y_velocity}")
-
-                    # Update the dot position, apply bounds to keep the dot within screen limits
-                    dot_position[0] = max(0, min(500, dot_position[0] + int(y_velocity)))
-                    dot_position[1] = max(0, min(500, dot_position[1] + int(x_velocity)))
-
-                    # Debug: print the updated dot position
                     print(f"Updated Dot Position -> x: {dot_position[0]}, y: {dot_position[1]}")
                     
                 except ValueError:
@@ -97,7 +87,7 @@ def draw_moving_dot():
                 running = False
 
         screen.fill((0, 0, 0))  # Clear the screen
-        pygame.draw.circle(screen, (255, 0, 0), dot_position, 10)  # Draw the dot
+        pygame.draw.circle(screen, (255, 0, 0), (int(dot_position[0]), int(dot_position[1])), 10)  # Draw the dot
 
         pygame.display.flip()
         clock.tick(30)
