@@ -15,7 +15,6 @@ void setup() {
   Wire.begin();
   
   if (!mpu.begin()) {
-    Serial.println("Failed to detect and initialize MPU6050 sensor!");
     while (1);  // Halt if MPU6050 is not detected
   }
 
