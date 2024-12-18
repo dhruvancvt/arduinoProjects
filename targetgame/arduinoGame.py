@@ -100,7 +100,7 @@ def draw_moving_dot():
 
 if __name__ == '__main__':
     try:
-        serial_thread = threading.Thread(target=readserial, args=('/dev/cu.usbmodem1443201', 115200))  # Update with your serial port
+        serial_thread = threading.Thread(target=readserial, args=('/dev/cu.usbmodem1423201', 115200))  # Update with your serial port
         serial_thread.start()
 
         stop_thread = threading.Thread(target=stop_reading)

@@ -31,7 +31,7 @@ void loop() {
   mpu.getEvent(&accelEvent, &gyroEvent, &tempEvent);
   
   // Print the x-axis acceleration value
-  Serial.println(accelEvent.acceleration.z);
+  Serial.println(accelEvent.acceleration.x);
 
   delay(50);  // Delay between readings (adjust as needed)
 }
