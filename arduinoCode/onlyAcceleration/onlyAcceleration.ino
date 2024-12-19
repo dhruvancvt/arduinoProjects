@@ -33,5 +33,5 @@ void loop() {
   // Print the x-axis acceleration value
   Serial.println(accelEvent.acceleration.x);
 
-  delay(50);  // Delay between readings (adjust as needed)
+  delay(1);  // Delay between readings (adjust as needed)
 }
