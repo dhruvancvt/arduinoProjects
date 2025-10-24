@@ -1,0 +1,13 @@
+# Python dependencies for Arduino MPU6050 Motion Tracking Project
+
+# Serial communication with Arduino
+pyserial>=3.5
+
+# Graphics and visualization
+pygame>=2.1.0
+
+# Numerical computation and data processing
+numpy>=1.21.0
+
+# Plotting and data analysis
+matplotlib>=3.5.0
